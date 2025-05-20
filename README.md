@@ -1,7 +1,5 @@
 # Welcome to panda
 
-![panda tests](https://github.com/commaai/panda/workflows/tests/badge.svg)
-
 panda speaks CAN and CAN FD, and it runs on [STM32F413](https://www.st.com/resource/en/reference_manual/rm0430-stm32f413423-advanced-armbased-32bit-mcus-stmicroelectronics.pdf) and [STM32H725](https://www.st.com/resource/en/reference_manual/rm0468-stm32h723733-stm32h725735-and-stm32h730-value-line-advanced-armbased-32bit-mcus-stmicroelectronics.pdf).
 
 ## Directory structure
@@ -11,7 +9,9 @@ panda speaks CAN and CAN FD, and it runs on [STM32F413](https://www.st.com/resou
 ├── board           # Code that runs on the STM32
 ├── drivers         # Drivers (not needed for use with Python)
 ├── python          # Python userspace library for interfacing with the panda
-├── tests           # Tests and helper programs for panda
+├── tests           # Tests for panda
+├── scripts         # Miscellaneous used for panda development and debugging
+├── examples        # Example scripts for using a panda in a car
 ```
 
 ## Safety Model
@@ -46,7 +46,11 @@ In addition, we run the [ruff linter](https://github.com/astral-sh/ruff) and [my
 git clone https://github.com/commaai/panda.git
 cd panda
 
+# setup your environment
 ./setup.sh
+
+# build fw + run the tests
+./test.sh
 ```
 
 See [the Panda class](https://github.com/commaai/panda/blob/master/python/__init__.py) for how to interact with the panda.
