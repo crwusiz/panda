@@ -127,7 +127,6 @@ board board_dos = {
   .fan_max_rpm = 6500U,
   .fan_max_pwm = 100U,
   .avdd_mV = 3300U,
-  .fan_stall_recovery = true,
   .fan_enable_cooldown_time = 3U,
   .init = dos_init,
   .init_bootloader = unused_init_bootloader,

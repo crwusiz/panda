@@ -31,7 +31,6 @@ struct board {
   const bool has_spi;
   const uint16_t fan_max_rpm;
   const uint16_t avdd_mV;
-  const bool fan_stall_recovery;
   const uint8_t fan_enable_cooldown_time;
   const uint8_t fan_max_pwm;
   board_init init;
