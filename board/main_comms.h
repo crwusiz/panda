@@ -38,7 +38,6 @@ static int get_health_pkt(void *dat) {
   health->interrupt_load_pkt = interrupt_load;
 
   health->fan_power = fan_state.power;
-  health->fan_stall_count = fan_state.total_stall_count;
 
   health->sbu1_voltage_mV = harness.sbu1_voltage_mV;
   health->sbu2_voltage_mV = harness.sbu2_voltage_mV;
