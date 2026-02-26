@@ -15,7 +15,7 @@ def docker_run(String step_label, int timeout_mins, String cmd) {
 def phone(String ip, String step_label, String cmd) {
   withCredentials([file(credentialsId: 'id_rsa', variable: 'key_file')]) {
     def ssh_cmd = """
-ssh -tt -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ConnectionAttempts=3 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 -i ${key_file} 'comma@${ip}' /usr/bin/bash <<'END'
+ssh -tt -o StrictHostKeyChecking=no -i ${key_file} 'comma@${ip}' /usr/bin/bash <<'END'
 
 set -e
 
@@ -86,7 +86,7 @@ pipeline {
           steps {
             timeout(time: 20, unit: 'MINUTES') {
               script {
-                dockerImage = docker.build("${env.DOCKER_IMAGE_TAG}", "--build-arg CACHEBUST=${env.GIT_COMMIT} .")
+                dockerImage = docker.build("${env.DOCKER_IMAGE_TAG}", "--build-arg CACHEBUST=${env.BUILD_NUMBER} .")
               }
             }
           }
@@ -110,7 +110,7 @@ pipeline {
                   ["build", "scons -j4"],
                   ["flash", "cd scripts/ && ./reflash_internal_panda.py"],
                   ["flash jungle", "cd board/jungle && ./flash.py --all"],
-                  ["test", "cd tests/hitl && pytest --durations=0 2*.py [5-9]*.py"],
+                  ["test", "cd tests/hitl && HW_TYPES=10 pytest --durations=0 2*.py [5-9]*.py"],
                 ])
               }
             }
@@ -122,7 +122,19 @@ pipeline {
                   ["build", "scons -j4"],
                   ["flash", "cd scripts/ && ./reflash_internal_panda.py"],
                   ["flash jungle", "cd board/jungle && ./flash.py --all"],
-                  ["test", "cd tests/hitl && pytest --durations=0 2*.py [5-9]*.py"],
+                  ["test", "cd tests/hitl && HW_TYPES=9 pytest --durations=0 2*.py [5-9]*.py"],
+                ])
+              }
+            }
+
+            stage('test dos') {
+              agent { docker { image 'ghcr.io/commaai/alpine-ssh'; args '--user=root' } }
+              steps {
+                phone_steps("panda-dos", [
+                  ["build", "scons -j4"],
+                  ["flash", "cd scripts/ && ./reflash_internal_panda.py"],
+                  ["flash jungle", "cd board/jungle && ./flash.py --all"],
+                  ["test", "cd tests/hitl && HW_TYPES=6 pytest --durations=0 [2-9]*.py -k 'not test_send_recv'"],
                 ])
               }
             }

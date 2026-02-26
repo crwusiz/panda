@@ -84,6 +84,8 @@ void tick_handler(void) {
       uptime_cnt += 1U;
     }
 
+    led_set(LED_GREEN, green_led_enabled);
+
     // Check on button
     bool current_button_status = current_board->get_button();
 
@@ -175,7 +177,7 @@ int main(void) {
   print("**** INTERRUPTS ON ****\n");
   enable_interrupts();
 
-  can_silent = false;
+  can_silent = ALL_CAN_LIVE;
   set_safety_hooks(SAFETY_ALLOUTPUT, 0U);
 
   can_init_all();
