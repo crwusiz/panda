@@ -1,12 +1,10 @@
 import time
-import pytest
 
 from opendbc.car.hyundai.values import HyundaiSafetyFlags
 from opendbc.car.structs import CarParams
 from panda import Panda
 
 
-@pytest.mark.skip_panda_types((Panda.HW_TYPE_DOS, ))
 def test_voltage(p):
   for _ in range(10):
     voltage = p.health()['voltage']
@@ -19,8 +17,6 @@ def test_hw_type(p):
   """
 
   hw_type = p.get_type()
-  mcu_type = p.get_mcu_type()
-  assert mcu_type is not None
 
   app_uid =  p.get_uid()
   usb_serial = p.get_usb_serial()
@@ -32,7 +28,6 @@ def test_hw_type(p):
   with Panda(p.get_usb_serial()) as pp:
     assert pp.bootstub
     assert pp.get_type() == hw_type, "Bootstub and app hw type mismatch"
-    assert pp.get_mcu_type() == mcu_type, "Bootstub and app MCU type mismatch"
     assert pp.get_uid() == app_uid
 
 def test_heartbeat(p, panda_jungle):

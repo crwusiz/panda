@@ -10,12 +10,7 @@ YELLOW="\e[1;33m"
 RED="\e[1;31m"
 NC='\033[0m'
 
-: "${CPPCHECK_DIR:=$DIR/cppcheck/}"
-
-# install cppcheck if missing
-if [ -z "${SKIP_CPPCHECK_INSTALL}" ]; then
-  $DIR/install.sh
-fi
+: "${CPPCHECK_DIR:=$(python3 -c "import cppcheck; print(cppcheck.DIR)")}"
 
 # ensure checked in coverage table is up to date
 cd $DIR
@@ -66,9 +61,6 @@ cppcheck() {
 
 PANDA_OPTS="--enable=all --disable=unusedFunction --addon=misra"
 
-printf "\n${GREEN}** PANDA F4 CODE **${NC}\n"
-cppcheck $PANDA_OPTS -DSTM32F4 -DSTM32F413xx -I $PANDA_DIR/board/stm32f4/inc/ $PANDA_DIR/board/main.c
-
 printf "\n${GREEN}** PANDA H7 CODE **${NC}\n"
 cppcheck $PANDA_OPTS -DSTM32H7 -DSTM32H725xx -I $PANDA_DIR/board/stm32h7/inc/ $PANDA_DIR/board/main.c
 
@@ -77,7 +69,6 @@ cppcheck $PANDA_OPTS -DSTM32H7 -DSTM32H725xx -I $PANDA_DIR/board/stm32h7/inc/ $P
 #cppcheck --enable=unusedFunction --quiet $PANDA_DIR/board/
 
 printf "\n${GREEN}Success!${NC} took $SECONDS seconds\n"
-
 
 # ensure list of checkers is up to date
 cd $DIR
