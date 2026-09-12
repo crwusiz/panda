@@ -1,3 +1,11 @@
+#pragma once
+
+#include "board/config.h"
+
+uint8_t harness_orientation = HARNESS_ORIENTATION_NONE;
+uint8_t can_mode = CAN_MODE_NORMAL;
+uint8_t ignition = 0U;
+
 // ///////////////////////// //
 // Jungle board v2 (STM32H7) //
 // ///////////////////////// //
@@ -166,7 +174,6 @@ void board_v2_set_can_mode(uint8_t mode) {
   }
 }
 
-bool panda_power = false;
 uint8_t panda_power_bitmask = 0U;
 void board_v2_set_panda_power(bool enable) {
   panda_power = enable;
@@ -285,15 +292,10 @@ void board_v2_init(void) {
   set_gpio_mode(GPIOG, 7, MODE_OUTPUT);
 }
 
-void board_v2_tick(void) {}
-
 board board_v2 = {
-  .avdd_mV = 3300U,
   .init = &board_v2_init,
-  .init_bootloader = &board_v2_tick,
   .led_GPIO = {GPIOE, GPIOE, GPIOE},
   .led_pin = {4, 3, 2},
-  .board_tick = &board_v2_tick,
   .get_button = &board_v2_get_button,
   .set_panda_power = &board_v2_set_panda_power,
   .set_panda_individual_power = &board_v2_set_panda_individual_power,
