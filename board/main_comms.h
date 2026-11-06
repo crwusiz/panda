@@ -258,17 +258,20 @@ int comms_control_handler(ControlPacket_t *req, uint8_t *resp) {
       }
       break;
     // **** 0xe5: set CAN loopback (for testing)
+    #ifdef ALLOW_DEBUG
     case 0xe5:
       can_loopback = req->param1 > 0U;
       can_init_all();
       break;
+    #endif
     // **** 0xe6: set custom clock source period and pulse length
     case 0xe6:
       clock_source_set_timer_params(req->param1, req->param2);
       break;
     // **** 0xe7: set power save state
     case 0xe7:
-      set_power_save_state(req->param1 != 0U);
+      // power save only outside car safety modes
+      set_power_save_state((req->param1 != 0U) && !is_car_safety_mode(current_safety_mode));
       break;
     // **** 0xe8: set can-fd auto swithing mode
     case 0xe8:
@@ -324,6 +327,13 @@ int comms_control_handler(ControlPacket_t *req, uint8_t *resp) {
       } else if (req->param1 == 6U) {
         // the interrupt timer handler runs without its flag
         NVIC_SetPendingIRQ(INTERRUPT_TIMER_IRQ);
+      } else if (req->param1 == 7U) {
+        // re-enable the tick disabled by 0
+        nvic_enable(TICK_TIMER_IRQ);
+      } else if ((req->param1 == 8U) && (req->param2 < NUM_INTERRUPTS)) {
+        // one more call than the limit allows
+        interrupts[req->param2].call_counter = interrupts[req->param2].max_call_rate;
+        NVIC_SetPendingIRQ((IRQn_Type)req->param2);
       } else {
       }
       break;
