@@ -126,7 +126,7 @@ static void tick_handler(void) {
     heartbeat_tick_counter += 1U;
 
     // start the siren early on power loss while engaged
-    if (heartbeat_engaged && (heartbeat_tick_counter > 2U) && (current_board->read_voltage_mV() < 6000U)) {
+    if (safety.heartbeat_engaged && (heartbeat_tick_counter > 2U) && (current_board->read_voltage_mV() < 6000U)) {
       siren_countdown = 3U;
     }
 
@@ -139,14 +139,14 @@ static void tick_handler(void) {
     simple_watchdog_kick();
     sound_tick();
 
-    if (relay_malfunction_prev != relay_malfunction) {
-      if (relay_malfunction) {
+    if (relay_malfunction_prev != safety.relay_malfunction) {
+      if (safety.relay_malfunction) {
         fault_occurred(FAULT_RELAY_MALFUNCTION);
       } else {
         fault_recovered(FAULT_RELAY_MALFUNCTION);
       }
     }
-    relay_malfunction_prev = relay_malfunction;
+    relay_malfunction_prev = safety.relay_malfunction;
 
     // re-init everything that uses harness status
     if (harness.status != prev_harness_status) {
@@ -155,7 +155,7 @@ static void tick_handler(void) {
 
       // re-init everything that uses harness status
       can_init_all();
-      set_safety_mode(current_safety_mode, current_safety_param);
+      set_safety_mode(safety_setup.current_safety_mode, safety_setup.current_safety_param);
       set_power_save_state(power_save_enabled);
     }
 
@@ -167,7 +167,7 @@ static void tick_handler(void) {
         fault_occurred_value(FAULT_TIMER, tick_dt);
       }
       // set green LED to be controls allowed
-      led_set(LED_GREEN, controls_allowed);
+      led_set(LED_GREEN, safety.controls_allowed);
 
       // turn off the blue LED, turned on by CAN
       // unless we are in power saving mode
@@ -185,7 +185,7 @@ static void tick_handler(void) {
       }
 
       // disabling heartbeat not allowed while in safety mode
-      if (is_car_safety_mode(current_safety_mode)) {
+      if (is_car_safety_mode(safety_setup.current_safety_mode)) {
         heartbeat_disabled = false;
       }
 
@@ -193,17 +193,9 @@ static void tick_handler(void) {
         siren_countdown -= 1U;
       }
 
-      // exit controls allowed if unused by openpilot for a few seconds
-      if (controls_allowed && !heartbeat_engaged) {
-        heartbeat_engaged_mismatches += 1U;
-        if (heartbeat_engaged_mismatches >= 3U) {
-          mpu_safety_open();
-          controls_allowed = false;
-          mpu_safety_close();
-        }
-      } else {
-        heartbeat_engaged_mismatches = 0U;
-      }
+      mpu_safety_open();
+      safety_heartbeat_check();
+      mpu_safety_close();
 
       if (!heartbeat_disabled) {
         // if the heartbeat has been gone for a while, go to SILENT safety mode and enter power save
@@ -212,19 +204,21 @@ static void tick_handler(void) {
           puth(heartbeat_counter);
           print(" seconds. Safety is set to SILENT mode.\n");
 
-          if (heartbeat_engaged) {
+          if (safety.heartbeat_engaged) {
             siren_countdown = 3U;
           }
 
           // set flag to indicate the heartbeat was lost
-          if (is_car_safety_mode(current_safety_mode)) {
+          if (is_car_safety_mode(safety_setup.current_safety_mode)) {
             heartbeat_lost = true;
           }
 
           // clear heartbeat engaged state
-          heartbeat_engaged = false;
+          mpu_safety_open();
+          safety_heartbeat(false);
+          mpu_safety_close();
 
-          if (current_safety_mode != SAFETY_SILENT) {
+          if (safety_setup.current_safety_mode != SAFETY_SILENT) {
             set_safety_mode(SAFETY_SILENT, 0U);
           }
 
@@ -255,13 +249,15 @@ static void tick_handler(void) {
 
       // on to the next one
       uptime_cnt += 1U;
-      safety_mode_cnt += 1U;
       ignition_can_cnt += 1U;
 
       // synchronous safety check
       mpu_safety_open();
       safety_tick();
       mpu_safety_close();
+      if (safety_redundancy_fault) {
+        fault_occurred(FAULT_SAFETY_REDUNDANCY);
+      }
       mpu_check();
     }
 
@@ -392,7 +388,7 @@ int main(void) {
       }
     } else {
       if ((hw_type == HW_TYPE_CUATRO) && !current_board->read_som_gpio()) {
-        assert_fatal(current_safety_mode == SAFETY_SILENT, "Error: Entering low power mode while not in SAFETY_SILENT. Hanging\n");
+        assert_fatal(safety_setup.current_safety_mode == SAFETY_SILENT, "Error: Entering low power mode while not in SAFETY_SILENT. Hanging\n");
         enter_stop_mode(); // deep sleep, wakes on CAN or SBU activity
         assert_fatal(false, "Error: enter_stop_mode returned after system reset. Hanging\n");
       }
