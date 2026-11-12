@@ -162,6 +162,22 @@ int comms_control_handler(ControlPacket_t *req, uint8_t *resp) {
       resp[0] = current_board->read_som_gpio();
       resp_len = 1;
       break;
+    // **** 0xd9: read CAN/SPI diagnostics, versioned separately from health
+    case CAN_DIAGNOSTICS_REQUEST:
+      COMPILE_TIME_ASSERT(sizeof(can_diagnostics_t) == USBPACKET_MAX_SIZE);
+      if ((req->param1 == CAN_DIAGNOSTICS_VERSION) && (req->length == sizeof(can_diagnostics_t))) {
+        uint16_t tx_fifo_free[PANDA_CAN_CNT];
+        for (uint8_t i = 0U; i < PANDA_CAN_CNT; i++) {
+          const uint8_t can_number = CAN_NUM_FROM_BUS_NUM(i);
+          tx_fifo_free[i] = (can_number < PANDA_CAN_CNT) ?
+            (uint16_t)(CANIF_FROM_CAN_NUM(can_number)->TXFQS & FDCAN_TXFQS_TFFL) : 0xFFFFU;
+        }
+        can_diagnostics_t diagnostics;
+        can_diagnostics_snapshot(&diagnostics, tx_fifo_free);
+        resp_len = sizeof(diagnostics);
+        (void)memcpy(resp, (uint8_t *)&diagnostics, resp_len);
+      }
+      break;
     // **** 0xd0: fetch serial (aka the provisioned dongle ID)
     case 0xd0:
       // addresses are OTP

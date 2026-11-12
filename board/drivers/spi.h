@@ -84,8 +84,18 @@ static bool spi_handle_endpoint(uint8_t endpoint, const uint8_t *data, uint16_t 
     // NACK while the CAN TX buffers are full, the host retries
     if (spi_can_tx_ready) {
       spi_can_tx_ready = false;
+      #ifndef BOOTSTUB
+      const uint32_t diagnostic_start_us = microsecond_timer_get();
+      #endif
       comms_can_write(data, data_len);
+      #ifndef BOOTSTUB
+      can_diagnostics_spi_write(diagnostic_start_us);
+      #endif
       ack = true;
+    } else {
+      #ifndef BOOTSTUB
+      can_diagnostics_spi_nack();
+      #endif
     }
   } else if (endpoint == SPI_ENDPOINT_INFO) {
     // serial, HW type, bootstub

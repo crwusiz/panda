@@ -88,6 +88,7 @@ void update_can_health_pkt(uint8_t can_number, uint32_t ir_reg) {
 void process_can(uint8_t can_number) {
   if (can_number != 0xffU) {
     ENTER_CRITICAL();
+    const uint32_t diagnostic_start_us = microsecond_timer_get();
 
     FDCAN_GlobalTypeDef *FDCANx = CANIF_FROM_CAN_NUM(can_number);
     uint8_t bus_number = BUS_NUM_FROM_CAN_NUM(can_number);
@@ -145,6 +146,7 @@ void process_can(uint8_t can_number) {
         refresh_can_tx_slots_available();
       }
     }
+    can_diag_tx_time(bus_number, diagnostic_start_us);
     EXIT_CRITICAL();
   }
 }
@@ -196,10 +198,12 @@ static void can_rx(uint8_t can_number) {
     can_set_checksum(&to_push);
 
     // forwarding
+    const uint32_t diagnostic_safety_start_us = microsecond_timer_get();
     mpu_safety_open();
     int bus_fwd_num = safety_fwd_hook(bus_number, to_push.addr);
     safety_rx_invalid += safety_rx_hook(&to_push) ? 0U : 1U;
     mpu_safety_close();
+    can_diag_rx_safety_time(bus_number, diagnostic_safety_start_us);
     if (bus_fwd_num >= 0) {
       CANPacket_t to_send;
 

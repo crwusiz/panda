@@ -38,6 +38,8 @@ can_buffer(tx3_q, CAN_TX_BUFFER_SIZE)
 // cppcheck-suppress misra-c2012-9.3
 can_ring *can_queues[PANDA_CAN_CNT] = {&can_tx1_q, &can_tx2_q, &can_tx3_q};
 
+#include "board/drivers/can_diagnostics.h"
+
 // ********************* interrupt safe queue *********************
 bool can_pop(can_ring *q, CANPacket_t *elem) {
   bool ret = false;
@@ -45,6 +47,7 @@ bool can_pop(can_ring *q, CANPacket_t *elem) {
   ENTER_CRITICAL();
   if (q->w_ptr != q->r_ptr) {
     *elem = q->elems[q->r_ptr];
+    can_diag_dequeue(q);
     if ((q->r_ptr + 1U) == q->fifo_size) {
       q->r_ptr = 0;
     } else {
@@ -69,8 +72,11 @@ bool can_push(can_ring *q, const CANPacket_t *elem) {
   }
   if (next_w_ptr != q->r_ptr) {
     q->elems[q->w_ptr] = *elem;
+    can_diag_enqueue(q, next_w_ptr);
     q->w_ptr = next_w_ptr;
     ret = true;
+  } else {
+    can_diag_drop(q);
   }
   EXIT_CRITICAL();
   if (!ret) {
